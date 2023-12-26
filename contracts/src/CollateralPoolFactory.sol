@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.23;
 
-import {CollateralPool} from "/CollateralPool.sol";
+import {CollateralPool} from "./CollateralPool.sol";
 
 contract CollateralPoolFactory {
     address[] public deployedCollateralPools;

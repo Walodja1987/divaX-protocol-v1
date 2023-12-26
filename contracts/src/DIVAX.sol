@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: agpl-3.0
 pragma solidity ^0.8.23;
 
 // Collateral management:
@@ -16,17 +16,11 @@ pragma solidity ^0.8.23;
 // Handle case where not enough collateral to redeem
 
 contract DIVAX {
-    address private collateralPool;
+    bytes32 private _poolId;
 
-    constructor(string memory greeting_) {
-        greeting = greeting_;
+    constructor() {
+        
     }
 
-    function greet() public view returns (string memory) {
-        return greeting;
-    }
-
-    function setGreeting(string memory newGreeting) public {
-        greeting = newGreeting;
-    }
+    
 }

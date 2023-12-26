@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: agpl-3.0
 pragma solidity ^0.8.23;
 
 // Collateral management:
@@ -15,8 +15,17 @@ pragma solidity ^0.8.23;
 // reportPrice / oracle
 // Handle case where not enough collateral to redeem
 
-contract CollateralPool {
-    address private _collateralPool;
+
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ICollateralPool} from './interfaces/ICollateralPool.sol';
+
+contract CollateralPool is ICollateralPool, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
+    address private immutable _manager;
+    address private immutable _collateralToken;
 
     constructor(
         address manager_,
@@ -27,18 +36,19 @@ contract CollateralPool {
         _collateralToken = collateralToken_;
 
         if (initialFundingAmount_ != 0) {
-            if (collateralToken_ == address(0)) {
-                // Native token
-                
-            }
+            _addLiquidity(initialFundingAmount_, collateralToken_);
         }
     }
 
-    function greet() public view returns (string memory) {
-        return greeting;
-    }
-
-    function setGreeting(string memory newGreeting) public {
-        greeting = newGreeting;
+    function _addLiquidity(uint256 _amount, address collateralToken_) private {
+        if (collateralToken_ == address(0)) {
+            // Native gas token (e.g., ETH)
+            (bool success, ) = msg.sender.call{value: _amount}("");
+            if (!success) revert FailedGasTokenTransfer();
+        } else {
+            // ERC20 token; requires prior user approval to transfer the token
+            IERC20 _collateralTokenInstance = IERC20(collateralToken_);
+            _collateralTokenInstance.safeTransfer(msg.sender, _amount);
+        }
     }
 }
