@@ -18,8 +18,20 @@ pragma solidity ^0.8.23;
 contract CollateralPool {
     address private _collateralPool;
 
-    constructor(string memory greeting_) {
-        greeting = greeting_;
+    constructor(
+        address manager_,
+        address collateralToken_,
+        uint256 initialFundingAmount_
+    ) {
+        _manager = manager_;
+        _collateralToken = collateralToken_;
+
+        if (initialFundingAmount_ != 0) {
+            if (collateralToken_ == address(0)) {
+                // Native token
+                
+            }
+        }
     }
 
     function greet() public view returns (string memory) {
