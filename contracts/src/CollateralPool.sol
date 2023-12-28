@@ -74,4 +74,6 @@ contract CollateralPool is ICollateralPool, ReentrancyGuard {
     function getManager() public view returns (address) {
         return _manager;
     }
+
+    // @todo Add mechanism to check collateral vs. current exposure
 }

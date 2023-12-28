@@ -103,4 +103,6 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
         productId = bytes32(0); // @todo adjust
         return productId;
     }
+
+    // @todo interesting idea: bankruptcy process on-chain
 }
