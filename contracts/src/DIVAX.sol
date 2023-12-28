@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: agpl-3.0
-pragma solidity ^0.8.23;
+pragma solidity 0.8.23;
 
 // Collateral management:
 // createCollateralPool (on-chain)
@@ -20,8 +20,8 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {IDIVAX} from './interfaces/IDIVAX.sol';
 
 contract DIVAX is IDIVAX, ReentrancyGuard {
-    
-    struct ProductParams {
+
+    struct CreateProductParams {
         string referenceAsset;
         uint256 strike; // could be 2 strikes with flat area
         uint256 slope;
@@ -31,34 +31,57 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
         address permissionedERC721Token;
     }
 
-    mapping(bytes32 => ProductParams) public productIdToProductParams;
+    struct Product {
+        CreateProductParams createProductParams;
+        address productToken;
+    }
+
+    mapping(bytes32 => Product) public productIdToProduct;
 
     constructor() {
         
     }
 
     function createProduct(
-        ProductParams memory _productParams
+        CreateProductParams memory _createProductParams
     ) public returns (bytes32) {
-        CollateralPool _collateralPoolInstance = CollateralPool(_productParams.collateralPool);
+        CollateralPool _collateralPoolInstance = CollateralPool(_createProductParams.collateralPool);
         if (msg.sender != _collateralPoolInstance.getManager())
             revert MsgSenderNotManager(msg.sender, _collateralPoolInstance.getManager());
 
         bytes32 _productId = _getProductId();
 
-        // @todo check whether we can also pass _productParams directly like:
-        // productIdToProductParams[_productId] = _productParams
-        productIdToProductParams[_productId] = ProductParams({
-            referenceAsset: _productParams.referenceAsset,
-            strike: _productParams.strike, // could be 2 strikes with flat area
-            slope: _productParams.slope,
-            collateralPool: _productParams.collateralPool,
-            expiryTime: _productParams.expiryTime,
-            dataProvider: _productParams.dataProvider,
-            permissionedERC721Token: _productParams.permissionedERC721Token
+        // Deploy new product token contract
+
+        address productToken = address(0); // @todo replace
+
+        // @todo check whether we can also pass _createProductParams directly like:
+        // productIdToProduct[_productId] = _createProductParams
+        productIdToProduct[_productId] = Product({
+            createProductParams: CreateProductParams({
+                referenceAsset: _createProductParams.referenceAsset,
+            strike: _createProductParams.strike, // could be 2 strikes with flat area
+            slope: _createProductParams.slope,
+            collateralPool: _createProductParams.collateralPool,
+            expiryTime: _createProductParams.expiryTime,
+            dataProvider: _createProductParams.dataProvider,
+            permissionedERC721Token: _createProductParams.permissionedERC721Token
+            }),
+            productToken: productToken
         });
 
         return _productId;
+    }
+
+    function mintProductTokens(bytes32 _productId, uint256 _amount) public {
+        Product memory _product = productIdToProduct[_productId];
+        CollateralPool _collateralPoolInstance = CollateralPool(_product.createProductParams.collateralPool);
+
+        if (msg.sender != _collateralPoolInstance.getManager())
+            revert MsgSenderNotManager(msg.sender, _collateralPoolInstance.getManager());
+        
+
+
     }
 
     function _getProductId() private view returns (bytes32 productId) {
