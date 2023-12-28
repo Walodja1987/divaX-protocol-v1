@@ -4,30 +4,27 @@ pragma solidity ^0.8.23;
 import {CollateralPool} from "./CollateralPool.sol";
 
 contract CollateralPoolFactory {
-    address[] public deployedCollateralPools;
+    address[] public collateralPools;
 
     constructor() {
-        // some code if needed
     }
 
     // Function to create a new collateral pool
-    function createCollateralPool(
-        address _manager,
-        address _collateralToken,
-        uint256 _initialFundingAmount
-    ) public {
+    // `msg.sender` is set as the manager of the collateral pool
+    // Each collateral pool can only be used by one permissioned contract (simple initial version).
+    function createCollateralPool(address _collateralToken, address _permissionedContract) public {
         address newCollateralPool = address(
             new CollateralPool(
-                _manager,
+                msg.sender,
                 _collateralToken,
-                _initialFundingAmount
+                _permissionedContract // contract eligible to call the `claimPayout` function in `CollateralPool.sol`
             )
         );
-        deployedCollateralPools.push(newCollateralPool);
+        collateralPools.push(newCollateralPool);
     }
 
     // Get the list of deployed collateral pools
-    function getDeployedCollateralPools() public view returns (address[] memory) {
-        return deployedCollateralPools;
+    function getCollateralPools() public view returns (address[] memory) {
+        return collateralPools;
     }
 }

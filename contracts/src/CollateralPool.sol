@@ -26,29 +26,52 @@ contract CollateralPool is ICollateralPool, ReentrancyGuard {
 
     address private immutable _manager;
     address private immutable _collateralToken;
+    address private immutable _permissionedContract;
+
+    modifier onlyManager() {
+        if (msg.sender != _manager) revert MsgSenderNotManager(msg.sender, _manager);
+        _;
+    }
+
+    modifier onlyPermissionedContract() {
+        if (msg.sender != _permissionedContract) revert MsgSenderNotPermissionedContract(msg.sender, _permissionedContract);
+        _;
+    }
 
     constructor(
         address manager_,
         address collateralToken_,
-        uint256 initialFundingAmount_
+        address permissionedContract_
     ) {
-        _manager = manager_;
+        _manager = manager_; // `msg.sender` in factory contract
         _collateralToken = collateralToken_;
-
-        if (initialFundingAmount_ != 0) {
-            _addLiquidity(initialFundingAmount_, collateralToken_);
-        }
+        _permissionedContract = permissionedContract_;
     }
 
-    function _addLiquidity(uint256 _amount, address collateralToken_) private {
-        if (collateralToken_ == address(0)) {
-            // Native gas token (e.g., ETH)
-            (bool success, ) = msg.sender.call{value: _amount}("");
-            if (!success) revert FailedGasTokenTransfer();
-        } else {
-            // ERC20 token; requires prior user approval to transfer the token
-            IERC20 _collateralTokenInstance = IERC20(collateralToken_);
-            _collateralTokenInstance.safeTransfer(msg.sender, _amount);
-        }
+    // @todo handle direct eth transfers (receive/fallback function)
+
+    // @todo add to interface
+    // Safer to deposit via addCollateral as it includes a collateral check
+    // Anyone could add collateral
+    function addCollateral(uint256 _amount) public {
+        IERC20 _collateralTokenInstance = IERC20(_collateralToken);
+        _collateralTokenInstance.safeTransferFrom(msg.sender, address(this), _amount);
+    }
+
+    // @todo add to interface
+    function removeCollateral(uint256 _amount) public onlyManager {       
+        // ERC20 token; requires prior user approval to transfer the token.
+        // Will revert if user has insufficient token balance.
+        IERC20 _collateralTokenInstance = IERC20(_collateralToken);
+        _collateralTokenInstance.safeTransfer(msg.sender, _amount);
+    }
+
+    function claimPayout(uint256 _amount, address _recipient) public onlyPermissionedContract {
+        IERC20 _collateralTokenInstance = IERC20(_collateralToken);
+        _collateralTokenInstance.safeTransfer(_recipient, _amount);
+    }
+
+    function getManager() public view returns (address) {
+        return _manager;
     }
 }
