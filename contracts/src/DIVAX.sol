@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: agpl-3.0
-pragma solidity 0.8.23;
+pragma solidity ^0.8.23;
 
 // Collateral management:
 // createCollateralPool (on-chain)
@@ -21,6 +21,9 @@ import {IDIVAX} from './interfaces/IDIVAX.sol';
 
 contract DIVAX is IDIVAX, ReentrancyGuard {
 
+    uint256 private _nonce;
+    address private _productTokenFactory;
+
     struct CreateProductParams {
         string referenceAsset;
         uint256 strike; // could be 2 strikes with flat area
@@ -38,8 +41,8 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
 
     mapping(bytes32 => Product) public productIdToProduct;
 
-    constructor() {
-        
+    constructor(address productTokenFactory_) {
+        _productTokenFactory = productTokenFactory_;
     }
 
     function createProduct(
@@ -49,11 +52,21 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
         if (msg.sender != _collateralPoolInstance.getManager())
             revert MsgSenderNotManager(msg.sender, _collateralPoolInstance.getManager());
 
+        ++_nonce;
+        
         bytes32 _productId = _getProductId();
+
 
         // Deploy new product token contract
 
-        address productToken = address(0); // @todo replace
+        address _productToken = IProductTokenFactory(_productTokenFactory)
+            .createProductToken(
+                string(abi.encodePacked("L", Strings.toString(_nonce))), // name is equal to symbol
+                _productId,
+                _collateralTokenDecimals,
+                address(this),
+                _createProductParams.permissionedERC721Token
+            );
 
         // @todo check whether we can also pass _createProductParams directly like:
         // productIdToProduct[_productId] = _createProductParams
@@ -67,7 +80,7 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
             dataProvider: _createProductParams.dataProvider,
             permissionedERC721Token: _createProductParams.permissionedERC721Token
             }),
-            productToken: productToken
+            productToken: _productToken
         });
 
         return _productId;
@@ -77,11 +90,13 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
         Product memory _product = productIdToProduct[_productId];
         CollateralPool _collateralPoolInstance = CollateralPool(_product.createProductParams.collateralPool);
 
-        if (msg.sender != _collateralPoolInstance.getManager())
-            revert MsgSenderNotManager(msg.sender, _collateralPoolInstance.getManager());
+        address _manager = _collateralPoolInstance.getManager();
+
+        if (msg.sender != _manager) revert MsgSenderNotManager(msg.sender, _manager);
         
+        IProductToken(_product.productToken).mint(_manager, _amount);
 
-
+        // @todo emit event
     }
 
     function _getProductId() private view returns (bytes32 productId) {
