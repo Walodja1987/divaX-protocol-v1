@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity ^0.8.23;
 
-import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 /**
  * @notice Permissioned version of the product token contract
  */
-interface IPermissionedProductToken is IERC20Upgradeable {
+interface IPermissionedProductToken is ERC20Upgradeable {
     /**
      * @notice Function to initialize the product token instance
      */

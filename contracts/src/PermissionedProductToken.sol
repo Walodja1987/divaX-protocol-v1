@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: agpl-3.0
-pragma solidity 0.8.19;
+pragma solidity ^0.8.23;
 
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IPermissionedPositionToken} from "./interfaces/IPermissionedPositionToken.sol";
+import {IPermissionedProductToken} from "./interfaces/IPermissionedProductToken.sol";
 
-contract PermissionedPositionToken is
-    IPermissionedPositionToken,
+contract PermissionedProductToken is
+    IPermissionedProductToken,
     ERC20Upgradeable
 {
     address private _permissionedERC721Token;
@@ -15,7 +15,7 @@ contract PermissionedPositionToken is
     uint8 private _decimals;
 
     modifier onlyOwner() {
-        require(_owner == msg.sender, "PositionToken: caller is not owner");
+        require(_owner == msg.sender, "ProductToken: caller is not owner");
         _;
     }
 
@@ -74,6 +74,7 @@ contract PermissionedPositionToken is
         return _permissionedERC721Token;
     }
 
+    // @todo _beforeTokenTransfer doesn't exist. Use update
     function _beforeTokenTransfer(
         address from,
         address to,
@@ -84,10 +85,10 @@ contract PermissionedPositionToken is
         if (to != address(0)) {
             require(
                 from == address(0) || _validHolder(from),
-                "PositionToken: invalid sender"
+                "ProductToken: invalid sender"
             );
             // 0 address is passed during burn and should be allowed as recipient
-            require(_validHolder(to), "PositionToken: invalid recipient");
+            require(_validHolder(to), "ProductToken: invalid recipient");
         }
     }
 

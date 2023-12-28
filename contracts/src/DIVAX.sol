@@ -16,8 +16,12 @@ pragma solidity ^0.8.23;
 // Handle case where not enough collateral to redeem
 
 import {CollateralPool} from './CollateralPool.sol';
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IDIVAX} from './interfaces/IDIVAX.sol';
+import {IProductTokenFactory} from './interfaces/IProductTokenFactory.sol';
+import {IProductToken} from './interfaces/IProductToken.sol';
 
 contract DIVAX is IDIVAX, ReentrancyGuard {
 
@@ -54,14 +58,14 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
 
         ++_nonce;
         
-        bytes32 _productId = _getProductId();
+        bytes32 _productId = _getProductId(); // @todo implement function
 
 
         // Deploy new product token contract
-
+        uint8 _collateralTokenDecimals = IERC20Metadata(_collateralPoolInstance.getCollateralToken()).decimals();
         address _productToken = IProductTokenFactory(_productTokenFactory)
             .createProductToken(
-                string(abi.encodePacked("L", Strings.toString(_nonce))), // name is equal to symbol
+                string(abi.encodePacked("X", Strings.toString(_nonce))), // name is equal to symbol
                 _productId,
                 _collateralTokenDecimals,
                 address(this),
