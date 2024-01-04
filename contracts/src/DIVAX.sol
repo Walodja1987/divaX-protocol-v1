@@ -15,74 +15,69 @@ pragma solidity ^0.8.23;
 // reportPrice / oracle
 // Handle case where not enough collateral to redeem
 
+// Only a template
 import {CollateralPool} from './CollateralPool.sol';
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IDIVAX} from './interfaces/IDIVAX.sol';
 import {IProductTokenFactory} from './interfaces/IProductTokenFactory.sol';
 import {IProductToken} from './interfaces/IProductToken.sol';
 
 contract DIVAX is IDIVAX, ReentrancyGuard {
 
-    uint256 private _nonce;
     address private _productTokenFactory;
+    uint256 internal _nonce;
 
-    struct CreateProductParams {
+    struct ProductTermsGeneralInput {
         string referenceAsset;
-        uint256 strike; // could be 2 strikes with flat area
-        uint256 slope;
         address collateralPool;
         uint96 expiryTime;
         address dataProvider;
         address permissionedERC721Token;
     }
 
-    struct Product {
-        CreateProductParams createProductParams;
+    struct ProductTermsGeneral {
+        ProductTermsGeneralInput productTermsGeneralInput;
         address productToken;
     }
 
-    mapping(bytes32 => Product) public productIdToProduct;
+    mapping(bytes32 => ProductTermsGeneral) public productIdToProductTermsGeneral; // payoff-independent params
 
     constructor(address productTokenFactory_) {
         _productTokenFactory = productTokenFactory_;
     }
 
-    function createProduct(
-        CreateProductParams memory _createProductParams
-    ) public returns (bytes32) {
-        CollateralPool _collateralPoolInstance = CollateralPool(_createProductParams.collateralPool);
+    function _defineProductTermsGeneral(
+        ProductTermsGeneralInput memory _productTermsGeneralInput,
+        bytes32 _payoffParamsHash,
+        string memory _productName
+    ) internal returns (bytes32) {
+        CollateralPool _collateralPoolInstance = CollateralPool(_productTermsGeneralInput.collateralPool);
         if (msg.sender != _collateralPoolInstance.getManager())
             revert MsgSenderNotManager(msg.sender, _collateralPoolInstance.getManager());
 
-        ++_nonce;
-        
-        bytes32 _productId = _getProductId(); // @todo implement function
-
+        bytes32 _productId = _getProductId(_productTermsGeneralInput, _payoffParamsHash); // @todo implement function (derived from PayoffParams und DIVAXParams inherited from DIVAX) nonce + hash of all parameters in PayoffParams and DIVAXParams
 
         // Deploy new product token contract
         uint8 _collateralTokenDecimals = IERC20Metadata(_collateralPoolInstance.getCollateralToken()).decimals();
         address _productToken = IProductTokenFactory(_productTokenFactory)
             .createProductToken(
-                string(abi.encodePacked("X", Strings.toString(_nonce))), // name is equal to symbol
+                _productName,
                 _productId,
                 _collateralTokenDecimals,
                 address(this),
-                _createProductParams.permissionedERC721Token
+                _productTermsGeneralInput.permissionedERC721Token
             );
 
-        // @todo check whether we can also pass _createProductParams directly like:
-        // productIdToProduct[_productId] = _createProductParams
-        productIdToProduct[_productId] = Product({
-            createProductParams: CreateProductParams({
-                referenceAsset: _createProductParams.referenceAsset,
-            strike: _createProductParams.strike, // could be 2 strikes with flat area
-            slope: _createProductParams.slope,
-            collateralPool: _createProductParams.collateralPool,
-            expiryTime: _createProductParams.expiryTime,
-            dataProvider: _createProductParams.dataProvider,
-            permissionedERC721Token: _createProductParams.permissionedERC721Token
+        // // @todo check whether we can also pass _productTermsGeneralInput directly like:
+        // // productIdToProductTermsGeneral[_productId] = _productTermsGeneralInput
+        productIdToProductTermsGeneral[_productId] = ProductTermsGeneral({
+            productTermsGeneralInput: ProductTermsGeneralInput({
+                referenceAsset: _productTermsGeneralInput.referenceAsset,
+                collateralPool: _productTermsGeneralInput.collateralPool,
+                expiryTime: _productTermsGeneralInput.expiryTime,
+                dataProvider: _productTermsGeneralInput.dataProvider,
+                permissionedERC721Token: _productTermsGeneralInput.permissionedERC721Token
             }),
             productToken: _productToken
         });
@@ -90,9 +85,9 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
         return _productId;
     }
 
-    function mintProductTokens(bytes32 _productId, uint256 _amount) public {
-        Product memory _product = productIdToProduct[_productId];
-        CollateralPool _collateralPoolInstance = CollateralPool(_product.createProductParams.collateralPool);
+    function mintProductTokens(bytes32 _productId, uint256 _amount) public nonReentrant {
+        ProductTermsGeneral memory _product = productIdToProductTermsGeneral[_productId];
+        CollateralPool _collateralPoolInstance = CollateralPool(_product.productTermsGeneralInput.collateralPool);
 
         address _manager = _collateralPoolInstance.getManager();
 
@@ -103,10 +98,61 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
         // @todo emit event
     }
 
-    function _getProductId() private view returns (bytes32 productId) {
-        productId = bytes32(0); // @todo adjust
-        return productId;
+    function _getProductId(
+        ProductTermsGeneralInput calldata _productTermsGeneralInput,
+        bytes32 _payoffParamsHash
+    ) internal returns (bytes32) {
+        // Assembly for more efficient computing:
+        // bytes32 _productId = keccak256(
+        //     abi.encode(
+        //         keccak256(bytes(_productTermsGeneralInput.referenceAsset)),
+        //         _productTermsGeneralInput.collateralPool,
+        //         _productTermsGeneralInput.expiryTime,
+        //         _productTermsGeneralInput.dataProvider,
+        //         _productTermsGeneralInput.permissionedERC721Token,
+        //         _payoffParamsHash,
+        //         msg.sender,
+        //         _nonce
+        //     )
+        // );
+        
+        ++_nonce; // productID calcs need to take nonce as input to make it unique
+        // @todo optimize using assembly
+        bytes32 _productId = keccak256(
+            abi.encode(
+                keccak256(bytes(_productTermsGeneralInput.referenceAsset)),
+                _productTermsGeneralInput.collateralPool,
+                _productTermsGeneralInput.expiryTime,
+                _productTermsGeneralInput.dataProvider,
+                _productTermsGeneralInput.permissionedERC721Token,
+                _payoffParamsHash,
+                msg.sender,
+                _nonce
+            )
+        );
+
+        return _productId;
     }
+
+
+    function setFinalReferenceValue(
+        bytes32 _productId,
+        uint256 _finalReferenceValue,
+        bool _allowChallenge
+    ) public {
+
+    }
+
+    function redeemPositionToken(
+        address _positionToken,
+        uint256 _amount
+    ) public {
+        
+    }
+
+
+
+
 
     // @todo interesting idea: bankruptcy process on-chain
 }
