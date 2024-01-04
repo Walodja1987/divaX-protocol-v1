@@ -147,7 +147,8 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
         address _positionToken,
         uint256 _amount
     ) public {
-        
+        // calculate
+        CollateralPool.claimPayout();
     }
 
 

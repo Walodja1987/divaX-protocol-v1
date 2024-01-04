@@ -63,6 +63,8 @@ contract MOVE is DIVAX, ReentrancyGuard {
         return _payoffParamsHash;
     }
 
-    function calculatePayout()
+    function calculatePayout() public {
+        
+    }
 
 }
