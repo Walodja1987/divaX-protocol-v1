@@ -181,4 +181,8 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
         }        
     }
     // @todo interesting idea: bankruptcy process on-chain
+
+    // @todo Consider adding coupon logic
+
+    // @todo add fee logic
 }
