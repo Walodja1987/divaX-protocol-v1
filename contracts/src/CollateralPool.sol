@@ -66,6 +66,7 @@ contract CollateralPool is ICollateralPool, ReentrancyGuard {
         _collateralTokenInstance.safeTransfer(msg.sender, _amount);
     }
 
+    // @todo consider renaming claimPayout as payout is not a good fit
     function claimPayout(uint256 _amount, address _recipient) public onlyPermissionedContract {
         IERC20 _collateralTokenInstance = IERC20(_collateralToken);
         _collateralTokenInstance.safeTransfer(_recipient, _amount);

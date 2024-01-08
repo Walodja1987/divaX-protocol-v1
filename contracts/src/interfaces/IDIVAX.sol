@@ -6,6 +6,12 @@ interface IDIVAX {
     // Thrown in `addCollateral` if `msg.sender` is not designated collateral pool manager 
     error MsgSenderNotManager(address msgSender, address manager);
 
+    // Settlement status
+    enum Status {
+        Open,
+        Confirmed
+    }
+
 }
 
     

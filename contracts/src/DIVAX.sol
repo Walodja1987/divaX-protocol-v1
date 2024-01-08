@@ -34,11 +34,15 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
         uint96 expiryTime;
         address dataProvider;
         address permissionedERC721Token;
+        uint256 denominationInCollateralToken; // in collateral token decimals; performance is calculated relative to strikes
     }
 
     struct ProductTermsGeneral {
         ProductTermsGeneralInput productTermsGeneralInput;
         address productToken;
+        uint256 finalReferenceValue; // 18 decimals
+        uint256 payoutPerProductToken; // in collateral token decimals
+        Status status;
     }
 
     mapping(bytes32 => ProductTermsGeneral) public productIdToProductTermsGeneral; // payoff-independent params
@@ -60,6 +64,9 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
 
         // Deploy new product token contract
         uint8 _collateralTokenDecimals = IERC20Metadata(_collateralPoolInstance.getCollateralToken()).decimals();
+
+        if (_collateralTokenDecimals > 18) revert CollateralDecimalsExceed18(); // @todo add error in interface
+
         address _productToken = IProductTokenFactory(_productTokenFactory)
             .createProductToken(
                 _productName,
@@ -77,9 +84,12 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
                 collateralPool: _productTermsGeneralInput.collateralPool,
                 expiryTime: _productTermsGeneralInput.expiryTime,
                 dataProvider: _productTermsGeneralInput.dataProvider,
-                permissionedERC721Token: _productTermsGeneralInput.permissionedERC721Token
+                permissionedERC721Token: _productTermsGeneralInput.permissionedERC721Token,
+                denominationInCollateralToken: _productTermsGeneralInput.denominationInCollateralToken
             }),
-            productToken: _productToken
+            productToken: _productToken,
+            status: Status.Open
+            // finalReferenceValue is set to 0 by default
         });
 
         return _productId;
@@ -134,26 +144,41 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
         return _productId;
     }
 
-
+    // @todo Consider checking expiry time. Maybe better to implement expiry time check inside the
+    // oracle adapter
     function setFinalReferenceValue(
         bytes32 _productId,
-        uint256 _finalReferenceValue,
-        bool _allowChallenge
+        uint256 _finalReferenceValue
     ) public {
+        // Check if productId exists
+        if (!_productExists(_productId)) revert NonExistentProduct(); // @todo add _productExists function and NonExistentProduct error
 
+        ProductTermsGeneral storage _productTermsGeneral = productIdToProductTermsGeneral[_productId];
+
+        if (msg.sender != _productTermsGeneral.productTermsGeneralInput.dataProvider) revert NotDataProvider(); // @todo NotDataProvider
+
+        _productTermsGeneral.finalReferenceValue = _finalReferenceValue;
+        _productTermsGeneral.status = Status.Confirmed; // Confirmed
+
+        _setPayoutPerProductToken(_productId);
     }
 
-    function redeemPositionToken(
-        address _positionToken,
+    function redeemProductToken(
+        address _productId,
         uint256 _amount
     ) public {
-        // calculate
-        CollateralPool.claimPayout();
+        ProductTermsGeneral memory _product = productIdToProductTermsGeneral[_productId];
+
+        // Burn product tokens. Will revert if `msg.sender` has a balance less than
+        // `_amount` (checked inside `burn` function).
+        IProductToken(_product.productToken).burn(msg.sender, _amount);
+
+        if (_product.status == Status.Confirmed) {
+            // calculate
+            CollateralPool.claimPayout(_amount * _product.payoutPerProductToken, msg.sender);
+        } else {
+            revert FinalReferenceValueNotConfirmed(); // @todo add error to interface
+        }        
     }
-
-
-
-
-
     // @todo interesting idea: bankruptcy process on-chain
 }
