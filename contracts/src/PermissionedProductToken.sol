@@ -75,12 +75,12 @@ contract PermissionedProductToken is
     }
 
     // @todo _beforeTokenTransfer doesn't exist. Use update
-    function _beforeTokenTransfer(
+    function _update(
         address from,
         address to,
         uint256 amount
     ) internal virtual override {
-        super._beforeTokenTransfer(from, to, amount);
+        super._update(from, to, amount);
 
         if (to != address(0)) {
             require(

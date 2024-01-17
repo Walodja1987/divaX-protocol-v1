@@ -6,7 +6,7 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 /**
  * @notice Permissioned version of the product token contract
  */
-interface IPermissionedProductToken is ERC20Upgradeable {
+interface IPermissionedProductToken {
     /**
      * @notice Function to initialize the product token instance
      */

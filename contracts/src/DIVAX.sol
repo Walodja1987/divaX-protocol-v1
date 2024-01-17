@@ -15,15 +15,17 @@ pragma solidity ^0.8.23;
 // reportPrice / oracle
 // Handle case where not enough collateral to redeem
 
+// @todo Read about inheritance linearlization as I had an issue with that at some point: https://docs.soliditylang.org/en/develop/contracts.html#multiple-inheritance-and-linearization
+
 // Only a template
-import {CollateralPool} from './CollateralPool.sol';
+import {CollateralPool} from './CollateralPool.sol'; // Question: Could we also use the interface here?
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IDIVAX} from './interfaces/IDIVAX.sol';
 import {IProductTokenFactory} from './interfaces/IProductTokenFactory.sol';
 import {IProductToken} from './interfaces/IProductToken.sol';
 
-contract DIVAX is IDIVAX, ReentrancyGuard {
+abstract contract DIVAX is IDIVAX, ReentrancyGuard {
 
     address private _productTokenFactory;
     uint256 internal _nonce;
@@ -52,7 +54,7 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
     }
 
     function _defineProductTermsGeneral(
-        ProductTermsGeneralInput memory _productTermsGeneralInput,
+        ProductTermsGeneralInput calldata _productTermsGeneralInput,
         bytes32 _payoffParamsHash,
         string memory _productName
     ) internal returns (bytes32) {
@@ -88,8 +90,9 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
                 denominationInCollateralToken: _productTermsGeneralInput.denominationInCollateralToken
             }),
             productToken: _productToken,
+            finalReferenceValue: 0,
+            payoutPerProductToken: 0,
             status: Status.Open
-            // finalReferenceValue is set to 0 by default
         });
 
         return _productId;
@@ -160,11 +163,24 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
         _productTermsGeneral.finalReferenceValue = _finalReferenceValue;
         _productTermsGeneral.status = Status.Confirmed; // Confirmed
 
-        _setPayoutPerProductToken(_productId);
+        _setPayoutPerProductToken(_productId); // Use the one implemented in MOVE contract; @todo alternative approach: define 
+        // _setPayoutPerProductToken as internal virtual without any contract code inside this contract and then inside MOVE contract, you 
+        // define it again but as with override keyword -> Would make DIVAX and abstract, as _setPayoutPerProductToken function
+        // is not implemented herein
+    }
+
+
+
+
+
+    function _setPayoutPerProductToken(bytes32 _productId) internal virtual;
+
+    function _productExists(bytes32 _productId) private view returns (bool) {
+        // @todo Some code
     }
 
     function redeemProductToken(
-        address _productId,
+        bytes32 _productId,
         uint256 _amount
     ) public {
         ProductTermsGeneral memory _product = productIdToProductTermsGeneral[_productId];
@@ -175,7 +191,8 @@ contract DIVAX is IDIVAX, ReentrancyGuard {
 
         if (_product.status == Status.Confirmed) {
             // calculate
-            CollateralPool.claimPayout(_amount * _product.payoutPerProductToken, msg.sender);
+            CollateralPool _collateralPoolInstance = CollateralPool(_product.productTermsGeneralInput.collateralPool); // Question: Could we also use the interface here?
+            _collateralPoolInstance.claimPayout(_amount * _product.payoutPerProductToken, msg.sender); // Question: Any overflow issues?
         } else {
             revert FinalReferenceValueNotConfirmed(); // @todo add error to interface
         }        
