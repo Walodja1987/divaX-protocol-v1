@@ -12,6 +12,7 @@ contract CollateralPoolFactory {
     // Function to create a new collateral pool
     // `msg.sender` is set as the manager of the collateral pool
     // Each collateral pool can only be used by one permissioned contract (simple initial version).
+    // permissionedContract: DIVAX, which is granted the permission to access the collateral pools
     function createCollateralPool(address _collateralToken, address _permissionedContract) public {
         address newCollateralPool = address(
             new CollateralPool(

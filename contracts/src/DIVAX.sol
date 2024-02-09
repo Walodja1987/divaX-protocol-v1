@@ -62,7 +62,7 @@ abstract contract DIVAX is IDIVAX, ReentrancyGuard {
         if (msg.sender != _collateralPoolInstance.getManager())
             revert MsgSenderNotManager(msg.sender, _collateralPoolInstance.getManager());
 
-        bytes32 _productId = _getProductId(_productTermsGeneralInput, _payoffParamsHash); // @todo implement function (derived from PayoffParams und DIVAXParams inherited from DIVAX) nonce + hash of all parameters in PayoffParams and DIVAXParams
+        bytes32 _productId = _generateProductId(_productTermsGeneralInput, _payoffParamsHash);
 
         // Deploy new product token contract
         uint8 _collateralTokenDecimals = IERC20Metadata(_collateralPoolInstance.getCollateralToken()).decimals();
@@ -111,7 +111,7 @@ abstract contract DIVAX is IDIVAX, ReentrancyGuard {
         // @todo emit event
     }
 
-    function _getProductId(
+    function _generateProductId(
         ProductTermsGeneralInput calldata _productTermsGeneralInput,
         bytes32 _payoffParamsHash
     ) internal returns (bytes32) {
@@ -169,10 +169,6 @@ abstract contract DIVAX is IDIVAX, ReentrancyGuard {
         // is not implemented herein
     }
 
-
-
-
-
     function _setPayoutPerProductToken(bytes32 _productId) internal virtual;
 
     function _productExists(bytes32 _productId) private view returns (bool) {
@@ -195,11 +191,13 @@ abstract contract DIVAX is IDIVAX, ReentrancyGuard {
             _collateralPoolInstance.claimPayout(_amount * _product.payoutPerProductToken, msg.sender); // Question: Any overflow issues?
         } else {
             revert FinalReferenceValueNotConfirmed(); // @todo add error to interface
-        }        
+        }
     }
     // @todo interesting idea: bankruptcy process on-chain
 
     // @todo Consider adding coupon logic
 
     // @todo add fee logic
+
+    // @todo Are WorstOf/Basket/Rainbow options possible?
 }

@@ -95,6 +95,7 @@ contract MOVE is DIVAX {
         return _referencePerformance * _payoffParams.slope * _productTermsGeneral.productTermsGeneralInput.denominationInCollateralToken * _SCALINGFACTOR / (_UNIT * _UNIT);
     }
 
+    // View function to simulate a payoff given a reference value
     function calculatePayoutPerProductToken(bytes32 _productId, uint256 _referenceValue) public view returns (uint256) {
         DIVAX.ProductTermsGeneral memory _productTermsGeneral = productIdToProductTermsGeneral[_productId];
         PayoffParams memory _payoffParams = productIdToPayoffParams[_productId];
