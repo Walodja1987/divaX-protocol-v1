@@ -8,7 +8,6 @@ import {PermissionedProductToken} from "./PermissionedProductToken.sol";
 import {IProductToken} from "./interfaces/IProductToken.sol";
 import {IPermissionedProductToken} from "./interfaces/IPermissionedProductToken.sol";
 
-
 /**
  * @dev Factory contract to create product token clones
  */
@@ -30,30 +29,18 @@ contract ProductTokenFactory is IProductTokenFactory {
         address owner_,
         address permissionedERC721Token_
     ) external override returns (address) {
-        
         address clone;
 
         // Initialize product token contract as implementation contract
         // doesn't have a constructor
         if (permissionedERC721Token_ == address(0)) {
             clone = Clones.clone(_PRODUCT_TOKEN_IMPLEMENTATION);
-            IProductToken(clone).initialize(
-                symbol_,
-                poolId_,
-                decimals_,
-                owner_
-            );
+            IProductToken(clone).initialize(symbol_, poolId_, decimals_, owner_);
         } else {
             clone = Clones.clone(_PERMISSIONED_PRODUCT_TOKEN_IMPLEMENTATION);
-            IPermissionedProductToken(clone).initialize(
-                symbol_,
-                poolId_,
-                decimals_,
-                owner_,
-                permissionedERC721Token_
-            );
+            IPermissionedProductToken(clone).initialize(symbol_, poolId_, decimals_, owner_, permissionedERC721Token_);
         }
-        
+
         return clone;
     }
 

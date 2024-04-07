@@ -15,11 +15,10 @@ pragma solidity ^0.8.23;
 // reportPrice / oracle
 // Handle case where not enough collateral to redeem
 
-
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {ICollateralPool} from './interfaces/ICollateralPool.sol';
+import {ICollateralPool} from "./interfaces/ICollateralPool.sol";
 
 contract CollateralPool is ICollateralPool, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -34,15 +33,12 @@ contract CollateralPool is ICollateralPool, ReentrancyGuard {
     }
 
     modifier onlyPermissionedContract() {
-        if (msg.sender != _permissionedContract) revert MsgSenderNotPermissionedContract(msg.sender, _permissionedContract);
+        if (msg.sender != _permissionedContract)
+            revert MsgSenderNotPermissionedContract(msg.sender, _permissionedContract);
         _;
     }
 
-    constructor(
-        address manager_,
-        address collateralToken_,
-        address permissionedContract_
-    ) {
+    constructor(address manager_, address collateralToken_, address permissionedContract_) {
         _manager = manager_; // `msg.sender` in factory contract
         _collateralToken = collateralToken_;
         _permissionedContract = permissionedContract_;
@@ -55,11 +51,12 @@ contract CollateralPool is ICollateralPool, ReentrancyGuard {
     // Anyone could add collateral
     function addCollateral(uint256 _amount) public {
         IERC20 _collateralTokenInstance = IERC20(_collateralToken);
+        // @todo use Permit2's permitTransferFrom
         _collateralTokenInstance.safeTransferFrom(msg.sender, address(this), _amount);
     }
 
     // @todo add to interface
-    function removeCollateral(uint256 _amount) public onlyManager {       
+    function removeCollateral(uint256 _amount) public onlyManager {
         // ERC20 token; requires prior user approval to transfer the token.
         // Will revert if user has insufficient token balance.
         IERC20 _collateralTokenInstance = IERC20(_collateralToken);
@@ -78,6 +75,10 @@ contract CollateralPool is ICollateralPool, ReentrancyGuard {
 
     function getCollateralToken() public view returns (address) {
         return _collateralToken;
+    }
+
+    function getPermissionedContract() public view returns (address) {
+        return _permissionedContract;
     }
 
     // @todo Add mechanism to check collateral vs. current exposure

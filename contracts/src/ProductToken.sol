@@ -8,7 +8,6 @@ import {IProductToken} from "./interfaces/IProductToken.sol";
  * @dev Implementation contract for product token clones
  */
 contract ProductToken is IProductToken, ERC20Upgradeable {
-
     bytes32 private _poolId;
     address private _owner;
     uint8 private _decimals;
@@ -22,24 +21,15 @@ contract ProductToken is IProductToken, ERC20Upgradeable {
     }
 
     modifier onlyOwner() {
-        require(
-            _owner == msg.sender,
-            "ProductToken: caller is not owner"
-            );
+        require(_owner == msg.sender, "ProductToken: caller is not owner");
         _;
     }
 
-    function mint(
-        address _recipient,
-        uint256 _amount
-        ) external override onlyOwner {
+    function mint(address _recipient, uint256 _amount) external override onlyOwner {
         _mint(_recipient, _amount);
     }
 
-    function burn(
-        address _redeemer,
-        uint256 _amount
-        ) external override onlyOwner {
+    function burn(address _redeemer, uint256 _amount) external override onlyOwner {
         _burn(_redeemer, _amount);
     }
 
@@ -61,7 +51,6 @@ contract ProductToken is IProductToken, ERC20Upgradeable {
         uint8 decimals_,
         address owner_
     ) external override initializer {
-
         __ERC20_init(symbol_, symbol_);
 
         _owner = owner_;

@@ -18,15 +18,14 @@ pragma solidity ^0.8.23;
 // @todo Read about inheritance linearlization as I had an issue with that at some point: https://docs.soliditylang.org/en/develop/contracts.html#multiple-inheritance-and-linearization
 
 // Only a template
-import {CollateralPool} from './CollateralPool.sol'; // Question: Could we also use the interface here?
+import {CollateralPool} from "./CollateralPool.sol"; // Question: Could we also use the interface here?
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {IDIVAX} from './interfaces/IDIVAX.sol';
-import {IProductTokenFactory} from './interfaces/IProductTokenFactory.sol';
-import {IProductToken} from './interfaces/IProductToken.sol';
+import {IDIVAX} from "./interfaces/IDIVAX.sol";
+import {IProductTokenFactory} from "./interfaces/IProductTokenFactory.sol";
+import {IProductToken} from "./interfaces/IProductToken.sol";
 
 abstract contract DIVAX is IDIVAX, ReentrancyGuard {
-
     address private _productTokenFactory;
     uint256 internal _nonce;
 
@@ -69,14 +68,13 @@ abstract contract DIVAX is IDIVAX, ReentrancyGuard {
 
         if (_collateralTokenDecimals > 18) revert CollateralDecimalsExceed18(); // @todo add error in interface
 
-        address _productToken = IProductTokenFactory(_productTokenFactory)
-            .createProductToken(
-                _productName,
-                _productId,
-                _collateralTokenDecimals,
-                address(this),
-                _productTermsGeneralInput.permissionedERC721Token
-            );
+        address _productToken = IProductTokenFactory(_productTokenFactory).createProductToken(
+            _productName,
+            _productId,
+            _collateralTokenDecimals,
+            address(this),
+            _productTermsGeneralInput.permissionedERC721Token
+        );
 
         // // @todo check whether we can also pass _productTermsGeneralInput directly like:
         // // productIdToProductTermsGeneral[_productId] = _productTermsGeneralInput
@@ -105,7 +103,7 @@ abstract contract DIVAX is IDIVAX, ReentrancyGuard {
         address _manager = _collateralPoolInstance.getManager();
 
         if (msg.sender != _manager) revert MsgSenderNotManager(msg.sender, _manager);
-        
+
         IProductToken(_product.productToken).mint(_manager, _amount);
 
         // @todo emit event
@@ -128,7 +126,7 @@ abstract contract DIVAX is IDIVAX, ReentrancyGuard {
         //         _nonce
         //     )
         // );
-        
+
         ++_nonce; // productID calcs need to take nonce as input to make it unique
         // @todo optimize using assembly
         bytes32 _productId = keccak256(
@@ -149,10 +147,7 @@ abstract contract DIVAX is IDIVAX, ReentrancyGuard {
 
     // @todo Consider checking expiry time. Maybe better to implement expiry time check inside the
     // oracle adapter
-    function setFinalReferenceValue(
-        bytes32 _productId,
-        uint256 _finalReferenceValue
-    ) public {
+    function setFinalReferenceValue(bytes32 _productId, uint256 _finalReferenceValue) public {
         // Check if productId exists
         if (!_productExists(_productId)) revert NonExistentProduct(); // @todo add _productExists function and NonExistentProduct error
 
@@ -163,8 +158,8 @@ abstract contract DIVAX is IDIVAX, ReentrancyGuard {
         _productTermsGeneral.finalReferenceValue = _finalReferenceValue;
         _productTermsGeneral.status = Status.Confirmed; // Confirmed
 
-        _setPayoutPerProductToken(_productId); // Use the one implemented in MOVE contract; @todo alternative approach: define 
-        // _setPayoutPerProductToken as internal virtual without any contract code inside this contract and then inside MOVE contract, you 
+        _setPayoutPerProductToken(_productId); // Use the one implemented in MOVE contract; @todo alternative approach: define
+        // _setPayoutPerProductToken as internal virtual without any contract code inside this contract and then inside MOVE contract, you
         // define it again but as with override keyword -> Would make DIVAX and abstract, as _setPayoutPerProductToken function
         // is not implemented herein
     }
@@ -175,10 +170,7 @@ abstract contract DIVAX is IDIVAX, ReentrancyGuard {
         // @todo Some code
     }
 
-    function redeemProductToken(
-        bytes32 _productId,
-        uint256 _amount
-    ) public {
+    function redeemProductToken(bytes32 _productId, uint256 _amount) public {
         ProductTermsGeneral memory _product = productIdToProductTermsGeneral[_productId];
 
         // Burn product tokens. Will revert if `msg.sender` has a balance less than

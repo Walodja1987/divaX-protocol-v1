@@ -5,10 +5,7 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IPermissionedProductToken} from "./interfaces/IPermissionedProductToken.sol";
 
-contract PermissionedProductToken is
-    IPermissionedProductToken,
-    ERC20Upgradeable
-{
+contract PermissionedProductToken is IPermissionedProductToken, ERC20Upgradeable {
     address private _permissionedERC721Token;
     bytes32 private _poolId;
     address private _owner;
@@ -42,19 +39,11 @@ contract PermissionedProductToken is
         _permissionedERC721Token = permissionedERC721Token_;
     }
 
-    function mint(address _recipient, uint256 _amount)
-        external
-        override
-        onlyOwner
-    {
+    function mint(address _recipient, uint256 _amount) external override onlyOwner {
         _mint(_recipient, _amount);
     }
 
-    function burn(address _redeemer, uint256 _amount)
-        external
-        override
-        onlyOwner
-    {
+    function burn(address _redeemer, uint256 _amount) external override onlyOwner {
         _burn(_redeemer, _amount);
     }
 
@@ -75,18 +64,11 @@ contract PermissionedProductToken is
     }
 
     // @todo _beforeTokenTransfer doesn't exist. Use update
-    function _update(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override {
+    function _update(address from, address to, uint256 amount) internal virtual override {
         super._update(from, to, amount);
 
         if (to != address(0)) {
-            require(
-                from == address(0) || _validHolder(from),
-                "ProductToken: invalid sender"
-            );
+            require(from == address(0) || _validHolder(from), "ProductToken: invalid sender");
             // 0 address is passed during burn and should be allowed as recipient
             require(_validHolder(to), "ProductToken: invalid recipient");
         }
