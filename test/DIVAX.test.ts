@@ -10,9 +10,7 @@ import {
 import { SetupOutput } from "../constants/types";
 import { getExpiryTime } from "../utils/helper";
 import { vars } from "hardhat/config";
-// import { OWNERSHIP_ADDRESS } from "../utils/addresses";
 import {
-  DIVAX,
   CollateralPool,
   CollateralPoolFactory,
   MockERC20,
