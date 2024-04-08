@@ -1,5 +1,12 @@
 import { HardhatUserConfig, task, vars } from "hardhat/config";
 
+// Managing configuration variables: https://hardhat.org/hardhat-runner/docs/guides/configuration-variables
+// Set new var            > pnpm hardhat vars set INFURA_API_KEY
+// Find var file location > pnpm hardhat vars path
+// Get var                > pnpm hardhat vars get TEST_API_KEY
+// List all vars          > pnpm hardhat vars list
+// Delete var             > pnpm hardhat vars delete TEST_API_KEY
+
 import "@nomicfoundation/hardhat-ethers";
 import "@nomicfoundation/hardhat-verify";
 import "@nomicfoundation/hardhat-ledger";
@@ -38,6 +45,7 @@ const ledgerAccounts = [
   ),
 ];
 
+// pnpm hardhat accounts
 task("accounts", "Prints the list of accounts", async (_, hre) => {
   const accounts = await hre.ethers.getSigners();
 
@@ -46,10 +54,12 @@ task("accounts", "Prints the list of accounts", async (_, hre) => {
   }
 });
 
+// pnpm hardhat evm
 task("evm", "Prints the configured EVM version", async (_, hre) => {
   console.log(hre.config.solidity.compilers[0].settings.evmVersion);
 });
 
+// pnpm hardhat balances
 task(
   "balances",
   "Prints the list of accounts and their balances",
