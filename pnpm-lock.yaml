@@ -41,6 +41,9 @@ devDependencies:
   "@openzeppelin/contracts":
     specifier: ^5.0.1
     version: 5.0.1
+  "@openzeppelin/contracts-upgradeable":
+    specifier: ^5.0.1
+    version: 5.0.1(@openzeppelin/contracts@5.0.1)
   "@tenderly/hardhat-tenderly":
     specifier: ^2.1.0
     version: 2.1.0(@types/node@20.10.5)(ethers@6.9.1)(hardhat@2.19.4)
@@ -1627,6 +1630,17 @@ packages:
     transitivePeerDependencies:
       - encoding
       - supports-color
+    dev: true
+
+  /@openzeppelin/contracts-upgradeable@5.0.1(@openzeppelin/contracts@5.0.1):
+    resolution:
+      {
+        integrity: sha512-MvaLoPnVcoZr/qqZP+4cl9piuR4gg0iIGgxVSZ/AL1iId3M6IdEHzz9Naw5Lirl4KKBI6ciTVnX07yL4dOMIJg==,
+      }
+    peerDependencies:
+      "@openzeppelin/contracts": 5.0.1
+    dependencies:
+      "@openzeppelin/contracts": 5.0.1
     dev: true
 
   /@openzeppelin/contracts@5.0.1:
