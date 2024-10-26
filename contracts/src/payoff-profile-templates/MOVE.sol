@@ -46,16 +46,13 @@ contract MOVE is DIVAX {
 
     // payoff-specific
     function _getPayoffParamsHash(PayoffParams calldata _payoffParams) private view returns (bytes32) {
-        // Assembly for more efficient computing:
-        // bytes32 _payoffParamsHash = keccak256(
-        //     abi.encode(
-        //         _payoffParams.strike,
-        //         _payoffParams.slope,
-        //         msg.sender,
-        //     )
-        // );
-        // @todo optimize using assembly
-        bytes32 _payoffParamsHash = keccak256(abi.encode(_payoffParams.strike, _payoffParams.slope, msg.sender));
+        bytes32 _payoffParamsHash = keccak256(
+            abi.encode(
+                _payoffParams.strike,
+                _payoffParams.slope,
+                msg.sender
+            )
+        );
         return _payoffParamsHash;
     }
 
